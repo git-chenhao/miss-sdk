@@ -83,6 +83,7 @@ public class RedisUtil {
 
     /**
      * 分布式锁
+     *
      * @param key
      * @param expireTime
      * @param timeUnit
@@ -113,7 +114,7 @@ public class RedisUtil {
             if (hasLock) {
                 Long value = this.get(key, Long.class);
                 if (value != null && value.longValue() != now) {
-                    throw new RuntimeException("The value of the lock is not consistent with the setting time.");
+                    logger.error("The value of the lock is not consistent with the setting time. now lock value:{},Previously set value:{}", value, now);
                 }
                 this.delete(key);
             }
