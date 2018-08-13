@@ -95,21 +95,29 @@ public class RedisUtil {
         long now = System.currentTimeMillis();
         boolean hasLock = false;
         try {
-            if (!this.setNx(key, now)) {
-                Long value = this.get(key, Long.class);
-                if (value != null) {
-                    if ((now - value.longValue()) > timeUnit.toMillis(value)) {
-                        logger.info("Occupy key long time,key:{}, use time:{}s，force release key!", key, value.longValue(), timeUnit.toSeconds(value));
-                        this.delete(key);
+            try {
+                if (!this.setNx(key, now)) {
+                    Long value = this.get(key, Long.class);
+                    if (value != null) {
+                        if ((now - value.longValue()) > timeUnit.toMillis(value)) {
+                            logger.info("Occupy key long time,key:{}, use time:{}s，force release key!", key, value.longValue(), timeUnit.toSeconds(value));
+                            this.delete(key);
+                        }
+                        throw new RuntimeException("Operation is too frequent. Please wait for a second try.");
                     }
-                    throw new RuntimeException("Operation is too frequent. Please wait for a second try.");
+                }else {
+                    hasLock = true;
+                    this.expire(key, expireTime, timeUnit);
                 }
-                return null;
-            } else {
-                hasLock = true;
-                this.expire(key, expireTime, timeUnit);
+            } catch (RuntimeException e) {
+                throw e;
+            } catch (Exception e) {
+                logger.error("get redis lock error,key:{}", key, e);
+            }
+            if (hasLock) {
                 return iProcess.process();
             }
+            return null;
         } finally {
             if (hasLock) {
                 Long value = this.get(key, Long.class);
