@@ -123,4 +123,3 @@ node_modules/*
 # Code Recommenders
 .recommenders/
 .idea/
-mgzf-arch-pay.iml
